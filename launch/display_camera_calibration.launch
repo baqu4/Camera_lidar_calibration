@@ -19,7 +19,8 @@
     <node
         pkg="image_proc"
         type="image_proc" 
-        name="image_proc_node1" />
+        name="image_proc_node1" 
+        ns="usb_cam"/>
 
     <!-- Run image_proc/rectify nodelet -->
     <node
@@ -28,12 +29,12 @@
         name="rectify_color"
         args="load image_proc/rectify lidar_camera_manager --no-bond" >
         
-        <!-- Remap input topics -->
-        <remap from="image_mono" to="$(arg camera)/image_raw" />
+        <!-- Remap input topgrics -->
+        <remap from="image_mono" to="$(arg camera)/image_color" />
         <remap from="camera_info" to="$(arg camera)/camera_info" />
 
         <!-- Remap output topics -->
-        <remap from="image_rect" to="$(arg camera)/image_raw" />
+        <remap from="image_rect" to="image_rect_color" />
     </node>
 
     <!-- Run image view to display the unrectified image -->
@@ -45,7 +46,7 @@
         output="screen">
         
         <!-- Remap input topics -->
-        <remap from="image" to="$(arg camera)/image_raw" />
+        <remap from="image" to="$(arg camera)/image_color" />
     </node>
 
     <!-- Run image view to display the rectified image -->
@@ -57,7 +58,7 @@
         output="screen">
         
         <!-- Remap input topics -->
-        <remap from="image" to="$(arg camera)/image_raw" />
+        <remap from="image" to="image_rect_color"/>
     </node>
 
 </launch>
