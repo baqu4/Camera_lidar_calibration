@@ -74,12 +74,11 @@ if __name__ == '__main__':
 
     # Load calibration data
     calibration = load_calibration_data(CALIB_FILE)
-    print(CALIB_FILE)
-    
     # Update calibration data
     rospy.loginfo('Updating %s data...' % CAMERA_INFO)
     for topic, msg, t in bag.read_messages():
         if topic == CAMERA_INFO:
+            msg.distortion_model = calibration['distortion_model']
             msg.D = calibration['distortion_coefficients']['data']
             msg.K = calibration['camera_matrix']['data']
             msg.R = calibration['rectification_matrix']['data']
