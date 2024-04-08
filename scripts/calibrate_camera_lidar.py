@@ -525,7 +525,7 @@ def listener(camera_info, image_color, velodyne_points, camera_lidar=None):
     
     # Synchronize the topics by time
     ats = message_filters.ApproximateTimeSynchronizer(
-        [image_sub, info_sub, velodyne_sub], queue_size=10000, slop=0.1)
+        [image_sub, info_sub, velodyne_sub], queue_size=10000, slop=1.7e9)
     ats.registerCallback(callback, image_pub)		# callback call
     
     # Keep python from exiting until this node is stopped
