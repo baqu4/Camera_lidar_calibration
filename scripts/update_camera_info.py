@@ -18,7 +18,7 @@ Notes:
 Make sure this file has executable permissions:
 $ chmod +x update_camera_info.py
 '''
-
+'''
 # Python 2/3 compatibility
 from __future__ import print_function
 
@@ -27,7 +27,7 @@ import os
 import sys
 import yaml
 
-# ROS modules
+# ROS modules	
 PKG = 'lidar_camera_calibration'
 import roslib; roslib.load_manifest(PKG)
 import rosbag
@@ -89,3 +89,54 @@ if __name__ == '__main__':
     # Close bag file
     bag.close()
     output.close()
+'''
+
+import os
+import sys
+import yaml
+import rospy
+from sensor_msgs.msg import CameraInfo
+
+def load_calibration_data(filename):
+    # Open calibration file
+    with open(filename, 'r') as stream:
+        try:
+            calibration = yaml.safe_load(stream)
+        except yaml.YAMLError as exc:
+            rospy.logerr(exc)
+            sys.exit(1)
+
+    return calibration
+
+def camera_info_callback(msg, calibration):
+    # Update calibration data in the CameraInfo message
+    msg.distortion_model = calibration['distortion_model']
+    msg.D = calibration['distortion_coefficients']['data']
+    msg.K = calibration['camera_matrix']['data']
+    msg.R = calibration['rectification_matrix']['data']
+    msg.P = calibration['projection_matrix']['data']
+    # Publish the updated CameraInfo message
+    camera_info_pub.publish(msg)
+
+if __name__ == '__main__':
+    if len(sys.argv) < 2:
+        print("Usage: update_camera_info.py calibration.yaml")
+        sys.exit(1)
+
+    CALIB_FILE = sys.argv[1]
+    CAMERA_INFO_TOPIC = '/usb_cam/camera_info'
+
+    # Load calibration data
+    calibration = load_calibration_data(CALIB_FILE)
+
+    # Initialize the ROS node
+    rospy.init_node('update_camera_info')
+
+    # Publisher for the updated CameraInfo
+    camera_info_pub = rospy.Publisher(CAMERA_INFO_TOPIC, CameraInfo, queue_size=10)
+
+    # Subscriber to the CameraInfo topic
+    rospy.Subscriber(CAMERA_INFO_TOPIC, CameraInfo, camera_info_callback, calibration)
+
+    # Keep the node running
+    rospy.spin()
