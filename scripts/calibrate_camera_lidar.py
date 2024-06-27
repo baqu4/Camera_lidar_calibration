@@ -320,6 +320,8 @@ def calibrate(points2D=None, points3D=None):
     if points2D is None: points2D = np.load(os.path.join(folder, 'img_corners.npy'))
     if points3D is None: points3D = np.load(os.path.join(folder, 'pcl_corners.npy'))
     
+    print(points2D.shape[0])
+    print(points3D.shape[0])
     # Check points shape
     assert(points2D.shape[0] == points3D.shape[0])
     if not (points2D.shape[0] >= 5):
@@ -339,6 +341,7 @@ def calibrate(points2D=None, points3D=None):
         translation_vector, camera_matrix, dist_coeffs)[0].squeeze(1)
     assert(points2D_reproj.shape == points2D.shape)
     error = (points2D_reproj - points2D)[inliers]  # Compute error only over inliers.
+    error = np.reshape(error, (-1, 2)) 
     rmse = np.sqrt(np.mean(error[:, 0] ** 2 + error[:, 1] ** 2))
     rospy.loginfo('Re-projection error before LM refinement (RMSE) in px: ' + str(rmse))
 
@@ -357,6 +360,7 @@ def calibrate(points2D=None, points3D=None):
             translation_vector, camera_matrix, dist_coeffs)[0].squeeze(1)
         assert(points2D_reproj.shape == points2D.shape)
         error = (points2D_reproj - points2D)[inliers]  # Compute error only over inliers.
+        error = np.reshape(error, (-1, 2)) 
         rmse = np.sqrt(np.mean(error[:, 0] ** 2 + error[:, 1] ** 2))
         rospy.loginfo('Re-projection error after LM refinement (RMSE) in px: ' + str(rmse))
 
@@ -406,7 +410,7 @@ def project_point_cloud(velodyne, img_msg, image_pub):
     points3D = np.asarray(points3D.tolist())
     
     # Group all beams together and pick the first 4 columns for X, Y, Z, intensity.
-    if OUSTER_LIDAR: 
+    if OUSTER_LIDAR:
         points3D = points3D.reshape(-1, 4)[:, :3]
     
     # points3D[:, [0, 2]] = points3D[:, [2, 0]]
@@ -442,7 +446,7 @@ def project_point_cloud(velodyne, img_msg, image_pub):
     # Publish the projected points image
     try:
         image_pub.publish(CV_BRIDGE.cv2_to_imgmsg(img, "bgr8"))
-    except CvBridgeError as e: 
+    except CvBridgeError as e:
         rospy.logerr(e)
 
 '''
@@ -521,11 +525,11 @@ def listener(camera_info, image_color, velodyne_points, camera_lidar=None):
 
     # Publish output topic
     image_pub = None
-    if camera_lidar: image_pub = rospy.Publisher(camera_lidar, Image, queue_size=10000)
+    if camera_lidar: image_pub = rospy.Publisher(camera_lidar, Image, queue_size=5)
     
     # Synchronize the topics by time
     ats = message_filters.ApproximateTimeSynchronizer(
-        [image_sub, info_sub, velodyne_sub], queue_size=10000, slop=1.7e9)
+        [image_sub, info_sub, velodyne_sub], queue_size=5, slop=0.1)
     ats.registerCallback(callback, image_pub)		# callback call
     
     # Keep python from exiting until this node is stopped
